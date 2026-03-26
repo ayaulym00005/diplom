@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #FDFAF6;
+    color: #3D2F23;
+    font-family: 'Outfit', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background-color: #F2D9CF;
+    color: #3D2F23;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FAF5EE;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #E8C1B0;
+    border-radius: 99px;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-bark-500 text-cream-50 font-body font-medium text-sm tracking-wide px-6 py-3 rounded-2xl transition-all duration-300 hover:bg-bark-600 hover:shadow-hover active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 bg-transparent border border-bark-300 text-bark-500 font-body font-medium text-sm tracking-wide px-6 py-3 rounded-2xl transition-all duration-300 hover:bg-cream-100 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 text-bark-400 font-body font-medium text-sm tracking-wide px-4 py-2 rounded-xl transition-all duration-200 hover:bg-cream-100 hover:text-bark-600 active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full bg-white border border-cream-300 text-bark-600 placeholder-bark-200 font-body text-sm px-4 py-3 rounded-xl outline-none transition-all duration-200 focus:border-blush-400 focus:ring-4 focus:ring-blush-100;
+  }
+
+  .card {
+    @apply bg-white rounded-3xl shadow-card border border-cream-200;
+  }
+
+  .label {
+    @apply block text-2xs font-body font-medium tracking-widest uppercase text-bark-300 mb-2;
+  }
+}
+
+/* Grain texture overlay */
+.grain-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  z-index: 9999;
+}
+
+/* Staggered animation delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Shimmer skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #F5EDE0 25%, #EDE0CC 50%, #F5EDE0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Radial mesh background */
+.mesh-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, #F9EDE8 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, #F5EDE0 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 60% 40%, #EDE0CC22 0%, transparent 60%),
+    #FDFAF6;
+}
+
+/* Progress step line */
+.step-line {
+  height: 1px;
+  background: linear-gradient(90deg, #E8C1B0, #EDE0CC);
+}
+
+/* Scan line animation for analysis */
+@keyframes scanLine {
+  0% { top: 0%; opacity: 1; }
+  100% { top: 100%; opacity: 0.3; }
+}
+
+.scan-line {
+  animation: scanLine 2s ease-in-out infinite alternate;
+}
+
+/* Radial progress */
+.radial-progress {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
