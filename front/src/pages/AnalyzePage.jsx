@@ -1,179 +1,346 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDropzone } from 'react-dropzone'
-import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { analysisAPI } from '../services/api'
-import PageLayout from '../components/layout/PageLayout'
+import BottomNav from '../components/layout/BottomNav'
+import PageHeader from '../components/layout/PageHeader'
 import { useLang } from '../context/LangContext'
-import { FadeUp, SectionTag } from '../components/ui'
 
-function AnalysisLoader({ stageIndex, stages, analysing }) {
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center py-16 px-8 text-center">
-      <div className="relative w-28 h-28 mb-8">
-        <div className="absolute inset-0 rounded-full bg-blush-100 animate-pulse-soft" />
-        <div className="absolute inset-3 rounded-full bg-blush-200 animate-pulse-soft" style={{ animationDelay: '0.3s' }} />
-        <div className="absolute inset-6 rounded-full bg-blush-300 flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="1.5" />
-            <circle cx="12" cy="12" r="4" fill="white" opacity="0.6" />
-          </svg>
-        </div>
-        <svg className="absolute inset-0 animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 112 112">
-          <circle cx="56" cy="56" r="52" stroke="#E8C1B0" strokeWidth="1.5" fill="none" strokeDasharray="80 246" strokeLinecap="round" />
-        </svg>
-      </div>
-      <p className="font-body text-xs tracking-widest uppercase text-bark-300 mb-3">{analysing}</p>
-      <AnimatePresence mode="wait">
-        <motion.p key={stageIndex}
-          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-          className="font-display text-xl text-bark-500">
-          {stages[Math.min(stageIndex, stages.length - 1)]}
-        </motion.p>
-      </AnimatePresence>
-      <div className="flex gap-2 mt-6">
-        {stages.map((_, i) => (
-          <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i <= stageIndex ? 'bg-blush-400 w-6' : 'bg-cream-300 w-1.5'}`} />
-        ))}
-      </div>
-    </motion.div>
-  )
-}
+const STAGES_KK = ['Сурет жүктелуде...','Тері анықталуда...','AI талдауда...','Нәтиже дайын!']
 
 export default function AnalyzePage() {
   const navigate = useNavigate()
   const { t } = useLang()
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const streamRef = useRef(null)
+
   const [preview, setPreview] = useState(null)
   const [file, setFile] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [stage, setStage] = useState(0)
+  const [mode, setMode] = useState('upload')
+  const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState('')
+  const [facingMode, setFacingMode] = useState('user')
+  const [flashEffect, setFlashEffect] = useState(false)
 
-  const stages = t('analyze.stages')
+  // Камера cleanup
+  useEffect(() => {
+    return () => { stopStream() }
+  }, [])
+
+  const stopStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+    setCameraReady(false)
+  }
+
+  const startCamera = async (facing) => {
+    stopStream()
+    setCameraError('')
+    setCameraReady(false)
+    const useFacing = facing || facingMode
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError('Камера қолжетімсіз. Телефоннан ашу үшін https:// арқылы кіріңіз.')
+      return
+    }
+
+    try {
+      const constraints = {
+        video: {
+          facingMode: { ideal: useFacing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      }
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      streamRef.current = stream
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().then(() => {
+            setCameraReady(true)
+          }).catch(err => {
+            setCameraError('Видео ойнату қатесі: ' + err.message)
+          })
+        }
+      }
+    } catch (err) {
+      console.error('Camera error:', err)
+      if (err.name === 'NotAllowedError') {
+        setCameraError('Камераға рұқсат берілмеді. Браузер параметрлерінен рұқсат беріңіз.')
+      } else if (err.name === 'NotFoundError') {
+        setCameraError('Камера табылмады.')
+      } else if (err.name === 'NotReadableError') {
+        setCameraError('Камера басқа қолданба пайдаланып жатыр.')
+      } else {
+        setCameraError('Камера қатесі: ' + err.message)
+      }
+    }
+  }
+
+  const switchCamera = async () => {
+    const newFacing = facingMode === 'user' ? 'environment' : 'user'
+    setFacingMode(newFacing)
+    await startCamera(newFacing)
+  }
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current || !cameraReady) return
+    setFlashEffect(true)
+    setTimeout(() => setFlashEffect(false), 300)
+
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth || 640
+    canvas.height = video.videoHeight || 480
+
+    const ctx = canvas.getContext('2d')
+    if (facingMode === 'user') {
+      ctx.translate(canvas.width, 0)
+      ctx.scale(-1, 1)
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    canvas.toBlob(blob => {
+      if (!blob) { toast.error('Фото түсіру сәтсіз'); return }
+      const f = new File([blob], 'camera.jpg', { type: 'image/jpeg' })
+      setFile(f)
+      setPreview(URL.createObjectURL(blob))
+      stopStream()
+      setMode('upload')
+    }, 'image/jpeg', 0.92)
+  }
+
+  const openCamera = () => {
+    setMode('camera')
+    setPreview(null)
+    setFile(null)
+    startCamera()
+  }
+
+  const closeCamera = () => {
+    stopStream()
+    setMode('upload')
+    setCameraError('')
+  }
 
   const onDrop = useCallback((accepted, rejected) => {
-    if (rejected.length > 0) { toast.error(t('common.noPhoto')); return }
+    if (rejected.length > 0) { toast.error('Сурет форматы дұрыс емес'); return }
     const f = accepted[0]
     setFile(f)
     setPreview(URL.createObjectURL(f))
-  }, [t])
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'image/jpeg': [], 'image/png': [], 'image/webp': [] },
-    maxSize: 10 * 1024 * 1024,
-    multiple: false,
+    accept: { 'image/jpeg':[], 'image/png':[], 'image/webp':[] },
+    maxSize: 10*1024*1024, multiple: false,
   })
 
   const handleAnalyze = async () => {
     if (!file) return
     setAnalyzing(true); setStage(0)
-    let s = 0
-    const interval = setInterval(() => { s++; if (s < stages.length) setStage(s); else clearInterval(interval) }, 900)
+    let st = 0
+    const iv = setInterval(() => { st++; if (st < stages.length) setStage(st); else clearInterval(iv) }, 900)
     try {
-      const formData = new FormData()
-      formData.append('image', file)
-      const result = await analysisAPI.analyze(formData)
-      clearInterval(interval)
+      const fd = new FormData(); fd.append('image', file)
+      const result = await analysisAPI.analyze(fd)
+      clearInterval(iv)
       navigate(`/result/${result.id}`, { state: { result } })
     } catch (err) {
-      clearInterval(interval)
-      toast.error(t('common.analysisFailed'))
+      clearInterval(iv)
+      toast.error('Анализ сәтсіз болды')
       setAnalyzing(false); setStage(0)
     }
   }
 
-  const reset = () => { setPreview(null); setFile(null); setAnalyzing(false); setStage(0) }
+  const reset = () => {
+    setPreview(null); setFile(null)
+    setAnalyzing(false); setStage(0)
+    closeCamera()
+  }
+
+  const stages = t('analyze.stages') || STAGES_KK
+  const tips = t('analyze.tipsList') || []
 
   return (
-    <PageLayout>
-      <div className="max-w-2xl mx-auto">
-        <FadeUp>
-          <div className="mb-8">
-            <SectionTag>{t('analyze.tag')}</SectionTag>
-            <h1 className="font-display text-4xl md:text-5xl text-bark-600 leading-tight">{t('analyze.title')}</h1>
-            <p className="font-body text-sm text-bark-300 mt-2 leading-relaxed">{t('analyze.desc')}</p>
-          </div>
-        </FadeUp>
+    <div style={s.root}>
+      <style>{`
+        * { box-sizing:border-box; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        @keyframes flash { 0%{opacity:1} 100%{opacity:0} }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .drop:hover { border-color:#4ECDC4!important; background:#f0fafb!important; }
+      `}</style>
 
-        <FadeUp delay={0.1}>
-          <div className="card overflow-hidden">
-            {analyzing ? (
-              <AnalysisLoader stageIndex={stage} stages={Array.isArray(stages) ? stages : []} analysing={t('analyze.analysing')} />
-            ) : (
-              <>
-                <div {...getRootProps()}
-                  className={`relative cursor-pointer transition-all duration-300 ${isDragActive ? 'bg-blush-100' : 'bg-white hover:bg-cream-50'}`}>
-                  <input {...getInputProps()} />
-                  {preview ? (
-                    <div className="relative">
-                      <img src={preview} alt="Uploaded face" className="w-full aspect-[4/3] object-cover" />
-                      <div className="absolute inset-0 bg-bark-600/0 hover:bg-bark-600/20 transition-all duration-300 flex items-center justify-center">
-                        <div className="opacity-0 hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl">
-                          <p className="text-xs font-body text-bark-500">{t('analyze.change').replace('← ', '')}</p>
-                        </div>
-                      </div>
-                      <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blush-400/60 to-transparent scan-line pointer-events-none" />
-                      {[['top-3 left-3', 'border-t border-l'], ['top-3 right-3', 'border-t border-r'], ['bottom-3 left-3', 'border-b border-l'], ['bottom-3 right-3', 'border-b border-r']].map(([pos, borders]) => (
-                        <div key={pos} className={`absolute ${pos} w-6 h-6 ${borders} border-blush-400 opacity-70`} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className={`flex flex-col items-center justify-center py-20 px-8 text-center border-2 border-dashed m-4 rounded-2xl transition-all duration-300 ${isDragActive ? 'border-blush-400 bg-blush-50' : 'border-cream-300'}`}>
-                      <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                        className="w-16 h-16 rounded-full bg-cream-100 flex items-center justify-center mb-5">
-                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                          <path d="M14 6v10M10 10l4-4 4 4" stroke="#C47D62" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                          <rect x="4" y="18" width="20" height="6" rx="2" stroke="#E8C1B0" strokeWidth="1.2" />
-                        </svg>
-                      </motion.div>
-                      <p className="font-display text-xl text-bark-500 mb-1">
-                        {isDragActive ? t('analyze.dragActive') : t('analyze.dropTitle')}
-                      </p>
-                      <p className="font-body text-sm text-bark-300 mb-4">{t('analyze.dropSub')}</p>
-                      <span className="text-2xs font-body text-bark-200 tracking-widest uppercase">{t('analyze.dropFormats')}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-6 border-t border-cream-100">
-                  {preview ? (
-                    <div className="flex gap-3">
-                      <button onClick={reset} className="btn-secondary flex-1">{t('analyze.change')}</button>
-                      <button onClick={handleAnalyze} className="btn-primary flex-1">{t('analyze.analyseBtn')}</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => document.querySelector('input[type=file]')?.click()} className="btn-primary w-full">
-                      {t('analyze.selectBtn')}
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </FadeUp>
+      <PageHeader title={t('analyze.title')||'Тері анализі 🔬'} desc={t('analyze.desc')||'Бетіңіздің суретін жүктеңіз'} />
 
-        {!analyzing && !preview && (
-          <FadeUp delay={0.2}>
-            <div className="bg-cream-100 rounded-2xl p-5 mt-6">
-              <p className="text-2xs font-body font-medium tracking-widest uppercase text-bark-300 mb-3">{t('analyze.tipsTag')}</p>
-              <ul className="space-y-2">
-                {(t('analyze.tips') || []).map((tip, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm font-body text-bark-400">
-                    <span className="w-1 h-1 rounded-full bg-blush-400 mt-2 shrink-0" />{tip}
-                  </li>
-                ))}
-              </ul>
+      <div style={s.content}>
+        {analyzing ? (
+          <div style={s.analyzeCard}>
+            <div style={s.circle}>
+              <div style={s.circleInner}><span style={{fontSize:40}}>🔬</span></div>
+              <svg style={s.spinRing} viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="54" stroke="#e8f4f3" strokeWidth="5" fill="none"/>
+                <circle cx="60" cy="60" r="54" stroke="#4ECDC4" strokeWidth="5" fill="none" strokeDasharray="80 259" strokeLinecap="round"/>
+              </svg>
             </div>
-          </FadeUp>
-        )}
+            <h2 style={s.stageText}>{stages[Math.min(stage, stages.length-1)]}</h2>
+            <div style={s.barWrap}><div style={{...s.barFill, width:`${((stage+1)/stages.length)*100}%`}}/></div>
+            <div style={s.dots}>{stages.map((_,i) => <div key={i} style={{...s.dot, background:i<=stage?'#4ECDC4':'#e8f4f3', width:i===stage?24:8}}/>)}</div>
+          </div>
+        ) : preview ? (
+          <div style={s.card}>
+            <div style={{position:'relative', borderRadius:16, overflow:'hidden'}}>
+              <img src={preview} alt="" style={{width:'100%', maxHeight:300, objectFit:'cover', display:'block'}}/>
+              <div style={{position:'absolute', top:10, right:10, background:'rgba(78,205,196,0.9)', color:'white', padding:'5px 12px', borderRadius:20, fontSize:12, fontWeight:700}}>{t('analyze.ready')}</div>
+            </div>
+            <div style={{display:'flex', gap:10, marginTop:14}}>
+              <button onClick={reset} style={s.secBtn}>{t('analyze.changeBtn')}</button>
+              <button onClick={handleAnalyze} style={s.primBtn}>{t('analyze.analyzeBtn')}</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Tabs */}
+            <div style={s.tabs}>
+              <button onClick={() => { closeCamera(); setMode('upload') }}
+                style={{...s.tab, ...(mode==='upload'?s.tabActive:{})}}>
+                {t('analyze.uploadTab')}
+              </button>
+              <button onClick={openCamera}
+                style={{...s.tab, ...(mode==='camera'?s.tabActive:{})}}>
+                {t('analyze.cameraTab')}
+              </button>
+            </div>
 
-        <FadeUp delay={0.3}>
-          <p className="text-center text-2xs font-body text-bark-200 mt-6 tracking-wide leading-relaxed whitespace-pre-line">
-            {t('analyze.privacy')}
-          </p>
-        </FadeUp>
+            {mode === 'upload' ? (
+              <div {...getRootProps()} className="drop" style={{...s.dropZone, ...(isDragActive?s.dropActive:{})}}>
+                <input {...getInputProps()}/>
+                <div style={s.dropContent}>
+                  <div style={{fontSize:56, animation:'float 3s ease-in-out infinite'}}>📸</div>
+                  <p style={s.dropTitle}>{isDragActive ? t('analyze.dragActive') : t('analyze.drop')}</p>
+                  <p style={s.dropSub}>{t('analyze.dropSub')}</p>
+                  <p style={s.dropFormats}>{t('analyze.formats')}</p>
+                </div>
+              </div>
+            ) : (
+              <div style={s.cameraBox}>
+                {/* Flash effect */}
+                {flashEffect && <div style={{position:'absolute', inset:0, background:'white', animation:'flash 0.3s ease', zIndex:10, borderRadius:16, pointerEvents:'none'}}/>}
+
+                {/* Video */}
+                <video
+                  ref={videoRef}
+                  style={{
+                    width:'100%', height:280, objectFit:'cover',
+                    borderRadius:'16px 16px 0 0', display:'block',
+                    background:'#1a1a1a',
+                    transform: facingMode==='user' ? 'scaleX(-1)' : 'none',
+                  }}
+                  autoPlay playsInline muted
+                />
+
+                {/* Loading overlay */}
+                {!cameraReady && !cameraError && (
+                  <div style={{position:'absolute', top:0, left:0, right:0, height:280, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.7)', borderRadius:'16px 16px 0 0'}}>
+                    <div style={{width:32, height:32, border:'3px solid rgba(255,255,255,0.3)', borderTop:'3px solid #4ECDC4', borderRadius:'50%', animation:'spin 0.8s linear infinite'}}/>
+                    <p style={{color:'white', fontSize:13, fontWeight:600, marginTop:12}}>{t('analyze.cameraLoading')}</p>
+                  </div>
+                )}
+
+                {/* Error overlay */}
+                {cameraError && (
+                  <div style={{position:'absolute', top:0, left:0, right:0, height:280, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.85)', borderRadius:'16px 16px 0 0', padding:20}}>
+                    <span style={{fontSize:40}}>📷</span>
+                    <p style={{color:'white', fontSize:13, fontWeight:600, textAlign:'center', marginTop:12, lineHeight:1.5}}>{cameraError}</p>
+                    <button onClick={() => startCamera()} style={{marginTop:14, padding:'10px 20px', background:'#4ECDC4', color:'white', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer'}}>
+                      {t('analyze.cameraRetry')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Face guide */}
+                {cameraReady && (
+                  <div style={{position:'absolute', top:0, left:0, right:0, height:280, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none'}}>
+                    <div style={{width:150, height:190, border:'2px dashed rgba(78,205,196,0.8)', borderRadius:'50%', animation:'pulse 2s ease-in-out infinite'}}/>
+                  </div>
+                )}
+
+                {/* Controls */}
+                <div style={{background:'#1a1a2e', padding:'14px 20px', borderRadius:'0 0 16px 16px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                  <button onClick={switchCamera} style={{width:44, height:44, borderRadius:'50%', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', color:'white', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}} title="Камера ауыстыру">
+                    🔄
+                  </button>
+                  <button
+                    onClick={capturePhoto}
+                    disabled={!cameraReady}
+                    style={{width:68, height:68, borderRadius:'50%', background:'white', border:'4px solid rgba(255,255,255,0.4)', cursor:cameraReady?'pointer':'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', opacity:cameraReady?1:0.5}}>
+                    <div style={{width:52, height:52, borderRadius:'50%', background:cameraReady?'linear-gradient(135deg,#4ECDC4,#44b8b0)':'#a0aec0'}}/>
+                  </button>
+                  <button onClick={closeCamera} style={{width:44, height:44, borderRadius:'50%', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', color:'white', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                    ✕
+                  </button>
+                </div>
+                <canvas ref={canvasRef} style={{display:'none'}}/>
+              </div>
+            )}
+
+            {/* Tips */}
+            {mode === 'upload' && (
+              <div style={s.tipsCard}>
+                <p style={s.tipsTitle}>{t('analyze.tips')}</p>
+                {tips.map((tip,i) => (
+                  <div key={i} style={{display:'flex', alignItems:'center', gap:10, marginBottom:8}}>
+                    <div style={{width:8, height:8, borderRadius:'50%', background:'#4ECDC4', flexShrink:0}}/>
+                    <p style={{fontSize:13, color:'#718096', margin:0}}>{tip}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </PageLayout>
+      <div style={{height:80}}/>
+      <BottomNav/>
+    </div>
   )
+}
+
+const s = {
+  root:{ minHeight:'100vh', background:'#f0fafb', fontFamily:"'Nunito','SF Pro Display',-apple-system,sans-serif", maxWidth:430, margin:'0 auto' },
+  content:{ padding:'16px' },
+  analyzeCard:{ background:'white', borderRadius:24, padding:'40px 24px', textAlign:'center', boxShadow:'0 4px 20px rgba(78,205,196,0.1)', border:'1px solid #e8f4f3' },
+  circle:{ position:'relative', width:120, height:120, margin:'0 auto 24px' },
+  circleInner:{ position:'absolute', inset:12, borderRadius:'50%', background:'linear-gradient(135deg,#4ECDC4,#44b8b0)', display:'flex', alignItems:'center', justifyContent:'center' },
+  spinRing:{ position:'absolute', inset:0, width:'100%', height:'100%', animation:'spin 2s linear infinite' },
+  stageText:{ fontSize:17, fontWeight:800, color:'#2d3748', marginBottom:20 },
+  barWrap:{ height:6, background:'#e8f4f3', borderRadius:3, overflow:'hidden', maxWidth:280, margin:'0 auto 16px' },
+  barFill:{ height:'100%', background:'linear-gradient(90deg,#4ECDC4,#44b8b0)', borderRadius:3, transition:'width 0.9s ease' },
+  dots:{ display:'flex', gap:6, justifyContent:'center', alignItems:'center' },
+  dot:{ height:8, borderRadius:4, transition:'all 0.4s' },
+  card:{ background:'white', borderRadius:20, overflow:'hidden', border:'1px solid #e8f4f3', padding:14 },
+  tabs:{ display:'flex', gap:8, marginBottom:14 },
+  tab:{ flex:1, padding:'12px', borderRadius:14, border:'1.5px solid #e8f4f3', background:'white', color:'#718096', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s', fontFamily:"'Nunito',sans-serif" },
+  tabActive:{ background:'#4ECDC4', borderColor:'#4ECDC4', color:'white' },
+  dropZone:{ background:'white', borderRadius:20, padding:'40px 24px', border:'2px dashed #c8ede8', cursor:'pointer', transition:'all 0.2s', marginBottom:14 },
+  dropActive:{ borderColor:'#4ECDC4', background:'#f0fafb' },
+  dropContent:{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap:8 },
+  dropTitle:{ fontSize:18, fontWeight:800, color:'#2d3748', margin:0 },
+  dropSub:{ fontSize:13, color:'#a0aec0', margin:0 },
+  dropFormats:{ fontSize:11, color:'#cbd5e0', margin:0 },
+  cameraBox:{ background:'#1a1a2e', borderRadius:20, overflow:'hidden', marginBottom:14, position:'relative' },
+  primBtn:{ flex:1, padding:'15px', background:'#4ECDC4', color:'white', border:'none', borderRadius:14, fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:"'Nunito',sans-serif" },
+  secBtn:{ flex:1, padding:'15px', background:'white', color:'#718096', border:'1.5px solid #e8f4f3', borderRadius:14, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:"'Nunito',sans-serif" },
+  tipsCard:{ background:'white', borderRadius:18, padding:'16px', border:'1px solid #e8f4f3' },
+  tipsTitle:{ fontSize:13, fontWeight:800, color:'#2d3748', margin:'0 0 10px' },
 }

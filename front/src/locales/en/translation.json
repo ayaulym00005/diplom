@@ -1,0 +1,284 @@
+{
+  "nav": {
+    "home": "Home",
+    "analyze": "Analyze",
+    "history": "History",
+    "profile": "Profile",
+    "cosmetics": "Cosmetics",
+    "chat": "Chat",
+    "diary": "Diary",
+    "dermatologist": "Dermatologist"
+  },
+  "landing": {
+    "title": "Know Your Skin",
+    "titleAccent": "Your Skin",
+    "desc": "Upload a photo, identify your skin type with AI and get personalized skincare recommendations",
+    "start": "Start for Free →",
+    "login": "Sign In",
+    "badge": "🧬 AI Skin Analysis",
+    "stats": { "accuracy": "Accuracy", "types": "Skin Type", "time": "Analysis Time" },
+    "howTitle": "Just 4 Steps",
+    "howBadge": "How it works?",
+    "steps": [
+      { "title": "Upload Photo", "desc": "Upload a photo of your face" },
+      { "title": "AI Analysis", "desc": "Artificial intelligence analyzes" },
+      { "title": "Result", "desc": "Your skin type is identified" },
+      { "title": "Advice", "desc": "Personal skincare program" }
+    ],
+    "ctaTitle": "Start Today!",
+    "ctaDesc": "Register for free and make your first analysis",
+    "ctaBtn": "Register for Free →"
+  },
+  "auth": {
+    "login": "Sign In",
+    "loginSub": "Sign in to your account",
+    "register": "Sign Up",
+    "registerSub": "Create a new account",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "forgot": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "terms": "I agree to the terms of use",
+    "loginBtn": "Sign In",
+    "registerBtn": "Sign Up",
+    "errors": {
+      "emailRequired": "Enter your email",
+      "emailInvalid": "Invalid email",
+      "passwordRequired": "Enter your password",
+      "passwordMin": "At least 8 characters",
+      "nameRequired": "Enter your name",
+      "confirmMatch": "Passwords do not match",
+      "termsRequired": "Accept the terms"
+    }
+  },
+  "dashboard": {
+    "greeting": { "morning": "Good morning", "afternoon": "Good afternoon", "evening": "Good evening" },
+    "totalAnalyses": "Analyses",
+    "skinType": "Skin Type",
+    "confidence": "Confidence",
+    "thisMonth": "This month",
+    "latestTag": "LATEST ANALYSIS",
+    "newAnalysis": "New Analysis",
+    "history": "History",
+    "profile": "Profile",
+    "recentTitle": "Recent Analyses",
+    "seeAll": "See all →",
+    "empty": "No Analyses",
+    "emptyDesc": "Upload a photo to identify your skin type",
+    "emptyBtn": "Start Analysis →",
+    "streakBadge": "days in a row of analysis!",
+    "progressLabel": "PROGRESS",
+    "progressImproved": "improved",
+    "chartTitle": "📈 14-Day Progress",
+    "confidencePercent": "Confidence %",
+    "diaryBtn": "Diary",
+    "diaryTitle": "📔 Today's Diary",
+    "moodLabel": "Your mood:",
+    "skinFeelLabel": "Skin feel:",
+    "skinFeelOptions": ["Oily", "Dry", "Normal", "Sensitive"],
+    "notePlaceholder": "Note (optional)...",
+    "saveBtn": "📔 Save",
+    "distributionTitle": "🥧 Skin Type Distribution",
+    "moodOptions": ["Great", "Good", "Okay", "Bad"],
+    "noData": "No data"
+  },
+  "cosmetics": {
+    "title": "💄 Cosmetics",
+    "desc": "Products for your skin type",
+    "search": "Search product...",
+    "skinLabel": "SKIN TYPE:",
+    "productCount": "products",
+    "modalTitle": "About Product",
+    "kaspiBtn": "🔴 Buy on Kaspi.kz",
+    "googleBtn": "🔍 Search on Google",
+    "cats": ["All", "Cleanser", "Toner", "Serum", "Moisturizer", "Sunscreen", "Treatment"],
+    "skins": ["All", "Acne", "Dry", "Normal", "Oily", "Combination", "Pigmentation", "Pores", "Wrinkles", "Sensitive"]
+  },
+  "analyze": {
+    "title": "Skin Analysis 🔬",
+    "desc": "Upload a photo of your face",
+    "stages": ["Uploading photo...", "Detecting skin...", "AI analyzing...", "Result ready!"],
+    "drop": "Upload Photo",
+    "dropSub": "or click to select",
+    "dragActive": "Drop it here!",
+    "formats": "JPEG · PNG · WEBP · Max 10MB",
+    "analyze": "Analyze 🔬",
+    "change": "← Change",
+    "select": "📸 Select Photo",
+    "tips": "💡 For best results:",
+    "tipsList": ["Shoot in good lighting", "Face should be fully visible", "Better without makeup", "Focus on face"],
+    "uploadTab": "📁 Upload File",
+    "cameraTab": "📷 Camera",
+    "ready": "✓ Ready",
+    "analyzeBtn": "Analyze 🔬",
+    "changeBtn": "← Change",
+    "cameraLoading": "Starting camera...",
+    "cameraRetry": "Try again",
+    "dragActive": "Drop it here!"
+  },
+  "result": {
+    "detected": "Detected Skin Type",
+    "confidence": "confidence",
+    "analysis": "📊 Analysis Results",
+    "care": "💊 Skincare Tips",
+    "again": "🔬 Analyze Again",
+    "historyBtn": "📋 History",
+    "back": "← Back",
+    "reviewTitle": "💬 Leave a Review",
+    "reviewPlaceholder": "Share your experience...",
+    "reviewBtn": "Submit",
+    "reviewSuccess": "Thank you for your review! 🙏",
+    "tabMorning": "🌅 Morning",
+    "tabEvening": "🌙 Evening",
+    "tabIngredients": "💊 Ingredients"
+  },
+  "history": {
+    "title": "History 📋",
+    "desc": "All your analyses",
+    "total": "Total Analyses",
+    "mostCommon": "Most Common",
+    "avgConf": "Avg Confidence",
+    "empty": "History Empty",
+    "emptyDesc": "Make your first analysis",
+    "emptyBtn": "🔬 Start Analysis"
+  },
+  "profile": {
+    "title": "Profile",
+    "account": "👤 Account",
+    "editProfile": "Edit Profile",
+    "editProfileSub": "Name, email",
+    "changePassword": "Change Password",
+    "changePasswordSub": "Verifies old password",
+    "forgotPassword": "Forgot Password",
+    "forgotPasswordSub": "Recovery via email",
+    "skinCare": "🧴 Skin Care",
+    "updateProfile": "Update Profile",
+    "updateProfileSub": "Lifestyle and skin data",
+    "analysisHistory": "Analysis History",
+    "analysisHistorySub": "All results",
+    "other": "⚠️ Other",
+    "logout": "Sign Out",
+    "logoutSub": "Sign out of account",
+    "deleteAccount": "Delete Account",
+    "deleteAccountSub": "All data will be deleted",
+    "deleteWarning": "Deleting your account is irreversible. All your data will be permanently deleted!",
+    "deleteConfirm": "Yes, Delete 🗑️",
+    "cancel": "Cancel",
+    "save": "Save ✅",
+    "oldPassword": "Old Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "sendCode": "Send Code 📧",
+    "resetToken": "Reset Token",
+    "resetPassword": "Reset Password ✅",
+    "back": "← Back"
+  },
+  "diary": {
+    "title": "📔 Skin Diary",
+    "desc": "Track your skin condition daily",
+    "streak": "days",
+    "addBtn": "+ Add Today's Entry",
+    "closeBtn": "✕ Close",
+    "formTitle": "📝 Today's Entry",
+    "moodLabel": "Mood:",
+    "skinFeelLabel": "Skin feel:",
+    "waterLabel": "💧 Water:",
+    "sleepLabel": "😴 Sleep:",
+    "notePlaceholder": "Note (optional)...",
+    "saveBtn": "📔 Save",
+    "saving": "Saving...",
+    "emptyTitle": "Diary Empty",
+    "emptyDesc": "Press the button above to add an entry",
+    "water": {
+      "less_1l": "Less than 1L",
+      "1_2l": "1-2 Liters",
+      "more_2l": "More than 2L"
+    },
+    "sleep": {
+      "less_6": "Less than 6 hours",
+      "6_8": "6-8 hours",
+      "more_8": "More than 8 hours"
+    },
+    "moods": {
+      "great": "Great",
+      "good": "Good",
+      "ok": "Okay",
+      "bad": "Bad"
+    },
+    "skinFeels": {
+      "oily": "Oily",
+      "dry": "Dry",
+      "normal": "Normal",
+      "sensitive": "Sensitive"
+    }
+  },
+  "skinTypes": {
+    "acne": { "label": "Acne", "desc": "Acne detected. Cleansing and treatment care is important." },
+    "dry": { "label": "Dry Skin", "desc": "Your skin lacks moisture. Nourishing care is needed." },
+    "normal": { "label": "Normal Skin", "desc": "Your skin is balanced. Continue preventive care." },
+    "oily": { "label": "Oily Skin", "desc": "Excess sebum production. Mattifying care is needed." },
+    "combination": { "label": "Combination", "desc": "Different areas of the face require different care." },
+    "pigmentation": { "label": "Pigmentation", "desc": "Pigmentation spots detected. SPF protection is important." },
+    "pores": { "label": "Enlarged Pores", "desc": "Pores are enlarged. Cleansing care is needed." },
+    "wrinkles": { "label": "Wrinkles", "desc": "Signs of aging detected. Anti-aging care is recommended." }
+  },
+  "result_reviews_title": "Other reviews:",
+  "tips": {
+    "acne": {
+      "morning": ["BHA gel (salicylic acid)", "Niacinamide toner", "Oil-free moisturizer", "SPF 30+"],
+      "evening": ["Double cleanse", "BHA toner", "Spot Benzoyl Peroxide", "Retinol (start low)", "Moisturizer"],
+      "ingredients": ["Salicylic Acid", "Niacinamide", "Benzoyl Peroxide", "Retinol", "Zinc"]
+    },
+    "dry": {
+      "morning": ["Cream cleanser", "Hyaluronic toner", "Vitamin C serum", "Rich moisturizer", "SPF 30+"],
+      "evening": ["Oil cleanser", "Foam cleanser", "Hyaluronic serum", "Night nourishing cream"],
+      "ingredients": ["Hyaluronic Acid", "Ceramides", "Glycerin", "Squalane", "Vitamin E"]
+    },
+    "normal": {
+      "morning": ["Gentle cleanser", "Toner", "Vitamin C serum", "Moisturizer", "SPF 30+"],
+      "evening": ["Cleanse", "Toner", "Retinol", "Night cream"],
+      "ingredients": ["Vitamin C", "Retinol", "Hyaluronic Acid", "Niacinamide", "Peptides"]
+    },
+    "oily": {
+      "morning": ["BHA gel cleanser", "Niacinamide toner", "Light serum", "Oil-free gel", "Mattifying SPF"],
+      "evening": ["Cleanse", "BHA toner", "Niacinamide serum", "Light moisturizer"],
+      "ingredients": ["Salicylic Acid", "Niacinamide", "Zinc", "Clay", "Green Tea"]
+    },
+    "combination": {
+      "morning": ["Balancing cleanser", "Toner", "Moisturizer", "SPF 30+"],
+      "evening": ["Double cleanse", "BHA on T-zone", "Hydrating serum", "Moisturizer"],
+      "ingredients": ["Niacinamide", "Hyaluronic Acid", "Salicylic Acid", "Ceramides"]
+    },
+    "pigmentation": {
+      "morning": ["Cleanser", "Niacinamide", "Vitamin C serum", "SPF 50+ MANDATORY!"],
+      "evening": ["Double cleanse", "AHA toner", "Alpha-Arbutin or Kojic Acid", "Retinol", "Moisturizer"],
+      "ingredients": ["Vitamin C", "Alpha-Arbutin", "Kojic Acid", "Niacinamide", "AHA", "SPF 50+"]
+    },
+    "pores": {
+      "morning": ["BHA cleanser", "Niacinamide toner", "Moisturizer", "SPF 30+"],
+      "evening": ["Double cleanse", "BHA toner", "Retinol", "Moisturizer"],
+      "ingredients": ["Salicylic Acid", "Niacinamide", "Retinol", "Clay", "Witch Hazel"]
+    },
+    "wrinkles": {
+      "morning": ["Gentle cleanser", "Vitamin C+E serum", "Peptide cream", "SPF 50+"],
+      "evening": ["Double cleanse", "Hyaluronic toner", "Retinol (key step!)", "Rich night cream", "Eye cream"],
+      "ingredients": ["Retinol", "Peptides", "Hyaluronic Acid", "Vitamin C", "Niacinamide"]
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success!",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "← Back",
+    "notFound": "Page Not Found",
+    "notFoundDesc": "The page you are looking for doesn't exist or has been moved.",
+    "returnHome": "← Return Home"
+  }
+}

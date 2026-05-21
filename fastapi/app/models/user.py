@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import String, Boolean, DateTime, Text
+from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +17,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     onboarding_complete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
@@ -28,12 +29,12 @@ class User(Base):
         nullable=False,
     )
 
-    # Relationships
     lifestyle: Mapped["Lifestyle"] = relationship(
         "Lifestyle", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
     analyses: Mapped[list["Analysis"]] = relationship(
-        "Analysis", back_populates="user", cascade="all, delete-orphan", order_by="Analysis.created_at.desc()"
+        "Analysis", back_populates="user", cascade="all, delete-orphan",
+        order_by="Analysis.created_at.desc()"
     )
 
     def __repr__(self) -> str:

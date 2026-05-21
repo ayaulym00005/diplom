@@ -1,13 +1,16 @@
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from typing import List
-import os
 
 
 class Settings(BaseSettings):
     # ── App ────────────────────────────────────────────
     APP_ENV: str = "development"
     DEBUG: bool = True
+    PROJECT_NAME: str = "Dermiq"
+
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
 
     # ── Database ───────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/dermiq"
@@ -15,7 +18,7 @@ class Settings(BaseSettings):
     # ── JWT ────────────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production-must-be-at-least-32-characters"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
 
     # ── CORS ───────────────────────────────────────────
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
@@ -23,6 +26,9 @@ class Settings(BaseSettings):
     @property
     def origins_list(self) -> List[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
+
+    # ── Gemini AI ──────────────────────────────────────
+    GEMINI_API_KEY: str = ""
 
     # ── ML ─────────────────────────────────────────────
     MODEL_PATH: str = "./ml/skin_type_best.keras"
@@ -34,7 +40,11 @@ class Settings(BaseSettings):
     def max_upload_bytes(self) -> int:
         return self.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
-    model_config = {"env_file": ".env", "case_sensitive": True}
+    # ✅ Тек осыны қалдыр
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True
+    }
 
 
 settings = Settings()

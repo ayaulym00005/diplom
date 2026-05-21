@@ -1,76 +1,98 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+
+from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-import hashlib
+from sqlalchemy import select
+
 from app.core.config import settings
 from app.db.session import get_db
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-bearer_scheme = HTTPBearer()
+# bcrypt + pbkdf2_sha256 екеуін де қолдайды
+pwd_context = CryptContext(
+    schemes=["bcrypt", "pbkdf2_sha256"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+)
 
-
-# ─── Password ─────────────────────────────────────────────────────────────────
-def _pre_hash(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+bearer_scheme = HTTPBearer(auto_error=False)
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 күн
 
 
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(_pre_hash(plain))
+    return pwd_context.hash(plain)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(_pre_hash(plain), hashed)
-
-
-# ─── JWT ──────────────────────────────────────────────────────────────────────
-
-def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
-    expire = datetime.now(timezone.utc) + (
-        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    payload = {"sub": subject, "exp": expire, "iat": datetime.now(timezone.utc)}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-
-def decode_token(token: str) -> str:
-    """Decode JWT and return user_id (subject). Raises 401 on failure."""
+    if not hashed or not plain:
+        return False
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: Optional[str] = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-        return user_id
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+        return pwd_context.verify(plain, hashed)
+    except Exception:
+        # Fallback: pbkdf2_sha256 тікелей тексеру
+        try:
+            from passlib.hash import pbkdf2_sha256
+            return pbkdf2_sha256.verify(plain, hashed)
+        except Exception:
+            pass
+        # Fallback: bcrypt тікелей
+        try:
+            from passlib.hash import bcrypt
+            return bcrypt.verify(plain, hashed)
+        except Exception:
+            pass
+        return False
 
 
-# ─── Dependency: get current user ────────────────────────────────────────────
+def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
 ):
     from app.models.user import User
-    from sqlalchemy import select
-    import uuid
 
-    user_id = decode_token(credentials.credentials)
+    exc = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Жарамсыз немесе мерзімі өткен токен.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if not credentials:
+        raise exc
 
     try:
-        uid = uuid.UUID(user_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+        user_id: str = payload.get("sub")
+        if not user_id:
+            raise exc
+    except JWTError:
+        raise exc
 
-    result = await db.execute(select(User).where(User.id == uid))
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if not user:
+        raise exc
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
+        raise HTTPException(status_code=403, detail="Аккаунт блокталған.")
 
     return user

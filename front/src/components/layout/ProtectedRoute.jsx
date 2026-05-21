@@ -1,6 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { Spinner } from '../ui'
 
 export default function ProtectedRoute({ children, requireOnboarding = false }) {
   const { user, loading } = useAuth()
@@ -8,8 +7,22 @@ export default function ProtectedRoute({ children, requireOnboarding = false }) 
 
   if (loading) {
     return (
-      <div className="min-h-screen mesh-bg flex items-center justify-center">
-        <Spinner size="lg" />
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f0fafb',
+      }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          border: '3px solid #e8f4f3',
+          borderTop: '3px solid #4ECDC4',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
@@ -18,7 +31,7 @@ export default function ProtectedRoute({ children, requireOnboarding = false }) 
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (requireOnboarding && !user.onboardingComplete) {
+  if (requireOnboarding && !user.onboarding_complete) {
     return <Navigate to="/onboarding" replace />
   }
 

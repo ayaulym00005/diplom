@@ -1,134 +1,141 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { analysisAPI } from '../services/api'
-import { SKIN_TYPES } from '../utils/skinData'
-import PageLayout from '../components/layout/PageLayout'
+import BottomNav from '../components/layout/BottomNav'
+import PageHeader from '../components/layout/PageHeader'
 import { useLang } from '../context/LangContext'
-import { FadeUp, SectionTag, Skeleton, EmptyState } from '../components/ui'
 
-function HistoryCard({ item, index, skinTypesTrans, confidenceLabel }) {
-  const skin = SKIN_TYPES[item.skin_type] || SKIN_TYPES.normal
-  const label = skinTypesTrans?.[item.skin_type]?.label || skin.label
-  const date = new Date(item.created_at)
-  const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-  const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-      <Link to={`/result/${item.id}`} state={{ result: item }}
-        className="block card hover:shadow-hover hover:-translate-y-0.5 transition-all duration-300 group overflow-hidden">
-        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${skin.color}80, ${skin.color}20)` }} />
-        <div className="p-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0"
-              style={{ background: skin.bg, color: skin.color }}>{skin.emoji}</div>
-            <div>
-              <p className="font-display text-lg text-bark-600 leading-tight">{label}</p>
-              <p className="font-body text-xs text-bark-300 mt-0.5">{dateStr} · {timeStr}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="text-right hidden sm:block">
-              <p className="font-mono text-sm text-bark-400">{item.confidence}%</p>
-              <p className="text-2xs font-body text-bark-200 tracking-wide">{confidenceLabel}</p>
-            </div>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"
-              className="text-bark-200 group-hover:text-blush-400 group-hover:translate-x-0.5 transition-all duration-200">
-              <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  )
-}
-
-function groupByMonth(items) {
-  const groups = {}
-  items.forEach((item) => {
-    const key = new Date(item.created_at).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-    if (!groups[key]) groups[key] = []
-    groups[key].push(item)
-  })
-  return groups
+const SKIN_INFO = {
+  acne:        { color: '#FF6B6B', bg: '#fff5f5', emoji: '🔴' },
+  dry:         { color: '#FFB347', bg: '#fff8f0', emoji: '🌿' },
+  normal:      { color: '#4ECDC4', bg: '#f0fafb', emoji: '✨' },
+  oily:        { color: '#5DADE2', bg: '#f0f7ff', emoji: '💧' },
+  combination: { color: '#B8A9E3', bg: '#f8f5ff', emoji: '⚡' },
+  pigmentation:{ color: '#F4D03F', bg: '#fffdf0', emoji: '🌙' },
+  pores:       { color: '#5DADE2', bg: '#f0f7ff', emoji: '🔵' },
+  wrinkles:    { color: '#A9A9A9', bg: '#f8f8f8', emoji: '〰️' },
 }
 
 export default function HistoryPage() {
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
-  const { t } = useLang()
+  const { t, lang } = useLang()
+  const dateLocale = lang === 'ru' ? 'ru-RU' : lang === 'en' ? 'en-US' : 'kk-KZ'
 
   useEffect(() => {
     analysisAPI.history().then(setHistory).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  const grouped = groupByMonth(history)
-  const skinTypesTrans = t('skinTypes')
+  const avgConf = history.length
+    ? Math.round(history.reduce((s, h) => s + h.confidence, 0) / history.length)
+    : 0
 
-  const mostCommon = (() => {
-    const counts = {}
-    history.forEach(h => { counts[h.skin_type] = (counts[h.skin_type] || 0) + 1 })
-    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
-    if (!top) return '—'
-    const label = skinTypesTrans?.[top[0]]?.label || SKIN_TYPES[top[0]]?.label || '—'
-    return label.split(' ')[0]
+  const topSkin = (() => {
+    const c = {}
+    history.forEach(h => { c[h.skin_type] = (c[h.skin_type] || 0) + 1 })
+    const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0]
+    return top ? (SKIN_INFO[top[0]] || SKIN_INFO.normal) : null
   })()
 
-  return (
-    <PageLayout>
-      <div className="max-w-2xl mx-auto">
-        <FadeUp>
-          <div className="mb-10 flex items-end justify-between gap-4 flex-wrap">
-            <div>
-              <SectionTag>{t('history.tag')}</SectionTag>
-              <h1 className="font-display text-4xl md:text-5xl text-bark-600 leading-tight">{t('history.title')}</h1>
-            </div>
-            {!loading && history.length > 0 && (
-              <Link to="/analyze" className="btn-primary text-xs tracking-widest uppercase shrink-0">{t('history.newAnalysis')}</Link>
-            )}
-          </div>
-        </FadeUp>
+  const h = t('history') || {}
 
+  return (
+    <div style={s.root}>
+      <style>{`
+        * { box-sizing: border-box; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hist-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(78,205,196,0.12) !important; }
+      `}</style>
+
+      <PageHeader
+        title={h.title || 'Тарих 📋'}
+        desc={h.desc || 'Барлық анализдеріңіз'}
+      />
+
+      <div style={s.content}>
         {!loading && history.length > 0 && (
-          <FadeUp delay={0.1}>
-            <div className="flex gap-6 mb-10 px-2">
-              {[
-                [t('history.totalAnalyses'), history.length],
-                [t('history.mostCommon'), mostCommon],
-                [t('history.avgConfidence'), `${Math.round(history.reduce((s, h) => s + h.confidence, 0) / history.length)}%`],
-              ].map(([label, val]) => (
-                <div key={label}>
-                  <p className="font-display text-2xl text-bark-600">{val}</p>
-                  <p className="text-2xs font-body text-bark-300 tracking-wide">{label}</p>
-                </div>
-              ))}
+          <div style={s.statsRow}>
+            <div>
+              <p style={s.statVal}>{history.length}</p>
+              <p style={s.statLabel}>{h.total || 'Жалпы анализ'}</p>
             </div>
-          </FadeUp>
+            {topSkin && (
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ ...s.statVal, color: topSkin.color }}>
+                  {topSkin.emoji} {(t('skinTypes.' + Object.entries(
+                    history.reduce((c, h) => { c[h.skin_type] = (c[h.skin_type] || 0) + 1; return c }, {})
+                  ).sort((a, b) => b[1] - a[1])[0]?.[0]) || {}).label?.split(' ')[0] || '—'}
+                </p>
+                <p style={s.statLabel}>{h.mostCommon || 'Жиі кездесетін'}</p>
+              </div>
+            )}
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ ...s.statVal, color: '#4ECDC4' }}>{avgConf}%</p>
+              <p style={s.statLabel}>{h.avgConf || 'Орташа сенімділік'}</p>
+            </div>
+          </div>
         )}
 
         {loading ? (
-          <div className="space-y-4">{[1,2,3].map((i) => <Skeleton key={i} className="h-24 rounded-3xl" />)}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+            <div style={{ width: 36, height: 36, border: '3px solid #e8f4f3', borderTop: '3px solid #4ECDC4', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          </div>
         ) : history.length === 0 ? (
-          <EmptyState icon="◈" title={t('history.empty.title')} description={t('history.empty.desc')}
-            action={<Link to="/analyze" className="btn-primary">{t('history.empty.btn')}</Link>} />
+          <div style={s.empty}>
+            <span style={{ fontSize: 64 }}>📋</span>
+            <h2 style={s.emptyTitle}>{h.empty || 'Тарих бос'}</h2>
+            <p style={s.emptyDesc}>{h.emptyDesc || 'Алғашқы анализіңізді жасаңыз'}</p>
+            <Link to="/analyze" style={s.emptyBtn}>{h.emptyBtn || '🔬 Анализ жасау'}</Link>
+          </div>
         ) : (
-          <div className="space-y-10">
-            {Object.entries(grouped).map(([month, items], gi) => (
-              <div key={month}>
-                <p className="text-2xs font-body font-medium tracking-widest uppercase text-bark-300 mb-4 px-1">{month}</p>
-                <div className="space-y-3">
-                  {items.map((item, i) => (
-                    <HistoryCard key={item.id} item={item} index={gi * 3 + i}
-                      skinTypesTrans={skinTypesTrans} confidenceLabel={t('history.confidence')} />
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {history.map(item => {
+              const sk = SKIN_INFO[item.skin_type] || SKIN_INFO.normal
+              const skinLabel = (t('skinTypes.' + item.skin_type) || {}).label || item.skin_type
+              const date = new Date(item.created_at)
+              return (
+                <Link key={item.id} to={`/result/${item.id}`} state={{ result: item }}
+                  className="hist-card"
+                  style={{ ...s.histCard, borderLeft: `4px solid ${sk.color}`, textDecoration: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 14, background: sk.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                      {sk.emoji}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 15, fontWeight: 800, color: '#2d3748', margin: '0 0 3px' }}>{skinLabel}</p>
+                      <p style={{ fontSize: 12, color: '#a0aec0', margin: 0 }}>
+                        {date.toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {' · '}
+                        {date.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: 18, fontWeight: 900, color: sk.color, margin: '0 0 2px' }}>{item.confidence}%</p>
+                      <p style={{ fontSize: 10, color: '#a0aec0', margin: 0 }}>{t('result.confidence')}</p>
+                    </div>
+                    <span style={{ color: '#cbd5e0', fontSize: 20, marginLeft: 4 }}>›</span>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         )}
+        <div style={{ height: 80 }} />
       </div>
-    </PageLayout>
+      <BottomNav />
+    </div>
   )
+}
+
+const s = {
+  root: { minHeight: '100vh', background: '#f0fafb', fontFamily: "'Nunito','SF Pro Display',-apple-system,sans-serif", maxWidth: 430, margin: '0 auto' },
+  content: { padding: '16px' },
+  statsRow: { background: 'white', borderRadius: 20, padding: '16px 20px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e8f4f3', boxShadow: '0 2px 12px rgba(78,205,196,0.06)' },
+  statVal: { fontSize: 18, fontWeight: 900, color: '#2d3748', margin: '0 0 2px', fontFamily: "'Poppins',sans-serif" },
+  statLabel: { fontSize: 11, color: '#a0aec0', margin: 0, fontWeight: 600 },
+  empty: { background: 'white', borderRadius: 24, padding: '48px 24px', textAlign: 'center', border: '1px solid #e8f4f3' },
+  emptyTitle: { fontSize: 22, fontWeight: 800, color: '#2d3748', margin: '12px 0 8px', fontFamily: "'Poppins',sans-serif" },
+  emptyDesc: { fontSize: 14, color: '#718096', margin: '0 0 20px' },
+  emptyBtn: { display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', background: '#4ECDC4', color: 'white', borderRadius: 14, textDecoration: 'none', fontSize: 14, fontWeight: 700 },
+  histCard: { background: 'white', borderRadius: 18, padding: '14px 16px', border: '1px solid #e8f4f3', boxShadow: '0 2px 10px rgba(78,205,196,0.06)', transition: 'all 0.2s', display: 'block' },
 }
