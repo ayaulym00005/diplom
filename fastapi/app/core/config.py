@@ -8,15 +8,15 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     PROJECT_NAME: str = "Dermiq"
 
-    MAIL_USERNAME: str = ""
-    MAIL_PASSWORD: str = ""
-    MAIL_FROM: str = ""
+    MAIL_USERNAME: str = "amirzhanovaayaulum@gmail.com"
+    MAIL_PASSWORD: str = "fjkr xwan osdq raoo"
+    MAIL_FROM: str = "amirzhanovaayaulum@gmail.com"
 
     # ── Database ───────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/dermiq"
 
     # ── JWT ────────────────────────────────────────────
-    SECRET_KEY: str = "change-me-in-production-must-be-at-least-32-characters"
+    SECRET_KEY: str = "dermiq-super-secret-key-2024-xK9mP3nQ"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
 
     # ── Gemini AI ──────────────────────────────────────
-    GEMINI_API_KEY: str = ""
+    GEMINI_API_KEY: str = "AIzaSyBIeXGMUj3Y9RROCvdIabznn_Wr21zK0EQ"
 
     # ── ML ─────────────────────────────────────────────
     MODEL_PATH: str = "./ml/skin_type_best.keras"
