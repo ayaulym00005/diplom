@@ -1,37 +1,13 @@
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-.Python
-.env
-*.env
 .venv/
 venv/
 env/
-ENV/
-
-# ML model (large binary — don't commit to git)
-ml/*.keras
-ml/*.h5
-ml/*.pb
-
-# Distribution
+.env
+*.log
+*.db
+*.sqlite3
 dist/
 build/
 *.egg-info/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-
-# Logs
-*.log
-logs/
-
-# DB
-*.db
-*.sqlite3
-
-# Docker
-.dockerignore
