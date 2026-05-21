@@ -25,7 +25,10 @@ async def lifespan(app: FastAPI):
     try:
         from app.db.base import Base
         from app.db.session import engine
-        import app.models.user  # noqa: F401 — модельдерді тіркеу
+        import app.models.user      # noqa: F401
+        import app.models.analysis  # noqa: F401
+        from app.api.routes.diary    import DiaryEntry   # noqa: F401
+        from app.api.routes.reviews  import Review       # noqa: F401
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables ready.")
@@ -52,10 +55,11 @@ app = FastAPI(
 )
 
 # ── CORS — барлық origin рұқсат (development үшін) ───────────────────────────
+_ORIGINS = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # Development-та барлығына рұқсат
-    allow_credentials=False,       # allow_origins=["*"] болса credentials=False болуы керек
+    allow_origins=_ORIGINS,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
