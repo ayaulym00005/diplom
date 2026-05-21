@@ -20,6 +20,18 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Dermiq API ...")
+
+    # Барлық кестелерді автоматты жасау
+    try:
+        from app.db.base import Base
+        from app.db.session import engine
+        import app.models.user  # noqa: F401 — модельдерді тіркеу
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables ready.")
+    except Exception as e:
+        logger.warning(f"DB init error: {e}")
+
     try:
         from app.services.ml_service import _load_model
         _load_model()
