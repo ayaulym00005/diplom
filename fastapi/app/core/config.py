@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     PROJECT_NAME: str = "Dermiq"
 
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: str
-    MAIL_FROM: str
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: str = ""
 
     # ── Database ───────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/dermiq"
