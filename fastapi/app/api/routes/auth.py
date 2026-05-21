@@ -4,6 +4,7 @@ Forgot password: Gmail SMTP арқылы нақты email жіберіледі
 """
 import uuid
 import secrets
+import logging
 from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
@@ -18,6 +19,8 @@ from app.core.security import (
     hash_password, verify_password,
     create_access_token, get_current_user,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -77,7 +80,11 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     if len(payload.password) < 8:
         raise HTTPException(422, "Құпия сөз кемінде 8 таңба болуы керек.")
 
-    result = await db.execute(select(User).where(User.email == email))
+    try:
+        result = await db.execute(select(User).where(User.email == email))
+    except Exception as e:
+        logger.exception(f"Register DB check error for {email}: {e}")
+        raise HTTPException(500, "Деректер қорына қосылу мүмкін болмады.")
     if result.scalar_one_or_none():
         raise HTTPException(409, "Бұл email тіркелген.")
 
@@ -90,8 +97,9 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
         db.add(user)
         await db.commit()
         await db.refresh(user)
-    except Exception:
+    except Exception as e:
         await db.rollback()
+        logger.exception(f"Register DB error for {email}: {e}")
         raise HTTPException(500, "Аккаунт жасалмады. Қайталаңыз.")
 
     token = create_access_token(str(user.id))
@@ -102,8 +110,13 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
 @router.post("/login", response_model=AuthResponse)
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     email = payload.email.strip().lower()
+    logger.info(f"Login attempt for {email}")
 
-    result = await db.execute(select(User).where(User.email == email))
+    try:
+        result = await db.execute(select(User).where(User.email == email))
+    except Exception as e:
+        logger.exception(f"Login DB error for {email}: {e}")
+        raise HTTPException(500, "Деректер қорына қосылу мүмкін болмады.")
     user = result.scalar_one_or_none()
 
     if not user:
