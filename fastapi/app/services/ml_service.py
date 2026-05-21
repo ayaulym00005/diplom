@@ -7,20 +7,24 @@ acne | combination | dry | normal | oily | pigmentation | pores | wrinkles
 import io
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Tuple
 
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 
-from app.core.config import settings
-
 logger = logging.getLogger(__name__)
 
+# Абсолют жол: fastapi/app/services/ → ../../ml/
+_BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = str(_BASE_DIR / ".." / ".." / "ml" / "skin_type_best.keras")
+_LABELS_PATH = _BASE_DIR / ".." / ".." / "ml" / "class_names.json"
+
+
 def _load_class_names() -> list[str]:
-    labels_path = Path(settings.MODEL_PATH).parent / "class_names.json"
-    if labels_path.exists():
-        with open(labels_path, "r", encoding="utf-8") as f:
+    if _LABELS_PATH.exists():
+        with open(_LABELS_PATH, "r", encoding="utf-8") as f:
             names = json.load(f)
         logger.info(f"Кластар жүктелді: {names}")
         return names
@@ -37,12 +41,12 @@ def _load_model():
     if _model is not None:
         return _model
 
-    logger.info(f"Модель жүктелуде: {settings.MODEL_PATH}")
+    logger.info(f"Модель жүктелуде: {MODEL_PATH}")
     load_error = None
 
     try:
         import tensorflow as tf
-        _model = tf.keras.models.load_model(settings.MODEL_PATH, compile=False)
+        _model = tf.keras.models.load_model(MODEL_PATH, compile=False)
         logger.info(f"Модель жүктелді. Шығыс: {_model.output_shape}")
         return _model
     except Exception as e:
@@ -51,7 +55,7 @@ def _load_model():
 
     try:
         import keras
-        _model = keras.models.load_model(settings.MODEL_PATH, compile=False)
+        _model = keras.models.load_model(MODEL_PATH, compile=False)
         logger.info(f"Модель жүктелді (keras). Шығыс: {_model.output_shape}")
         return _model
     except Exception as e:
